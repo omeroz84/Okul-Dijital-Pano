@@ -5,14 +5,14 @@ import { AiContent } from '../types';
 const getApiKey = (): string => {
   // 1. Try Local Storage (Admin Panel setting - Primary for this app)
   const localKey = localStorage.getItem('GEMINI_API_KEY');
-  if (localKey) return localKey;
+  if (localKey) return localKey.trim();
 
   // 2. Try Vite Environment Variable
   try {
     // @ts-ignore
     if (import.meta.env && import.meta.env.VITE_API_KEY) {
       // @ts-ignore
-      return import.meta.env.VITE_API_KEY;
+      return import.meta.env.VITE_API_KEY.trim();
     }
   } catch (e) {
     // Ignore
@@ -66,7 +66,7 @@ export const generateDailyContent = async (topic: string): Promise<AiContent> =>
     console.error("Gemini generation error:", error);
     return {
       title: 'Gemini Hatası',
-      content: 'İçerik oluşturulurken bir sorun oluştu. API anahtarınızı kontrol edin.',
+      content: 'İçerik oluşturulurken bir sorun oluştu. API anahtarınızı kontrol edin veya farklı bir konu deneyin.',
       type: 'info'
     };
   }

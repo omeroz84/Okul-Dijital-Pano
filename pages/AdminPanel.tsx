@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getStoredData, updateAnnouncements, updateTeachers, updatePhotos, updateWeather, updateAiContent, updateDutyStudents } from '../services/storage';
-import { AppData, Announcement, Teacher, SlidePhoto, Student } from '../types';
+import { getStoredData, updateAnnouncements, updateTeachers, updatePhotos, updateWeather, updateAiContent, updateDutyStudents, updateTheme, updateSchoolName } from '../services/storage';
+import { AppData, Announcement, Teacher, SlidePhoto, Student, ThemeType } from '../types';
 import { generateDailyContent, suggestAnnouncement } from '../services/geminiService';
-import { Plus, Trash2, Save, Sparkles, LayoutDashboard, Monitor, Cloud, Users, Image as ImageIcon, Megaphone, GraduationCap, RefreshCw, Settings, Key, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Save, Sparkles, LayoutDashboard, Monitor, Cloud, Users, Image as ImageIcon, Megaphone, GraduationCap, RefreshCw, Settings, Key, Eye, EyeOff, Palette, Building2 } from 'lucide-react';
 
 const TURKISH_CITIES = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman", "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
@@ -18,6 +19,14 @@ const DISTRICTS_BY_CITY: Record<string, string[]> = {
   "Adana": ["Aladağ", "Ceyhan", "Çukurova", "Feke", "İmamoğlu", "Karaisalı", "Karataş", "Kozan", "Pozantı", "Saimbeyli", "Sarıçam", "Seyhan", "Tufanbeyli", "Yumurtalık", "Yüreğir"]
 };
 
+const THEMES: { id: ThemeType, name: string, color: string }[] = [
+    { id: 'slate', name: 'Varsayılan (Gri)', color: 'bg-slate-900' },
+    { id: 'blue', name: 'Okyanus', color: 'bg-blue-900' },
+    { id: 'red', name: 'Okul Ruhu', color: 'bg-red-900' },
+    { id: 'green', name: 'Doğa', color: 'bg-green-900' },
+    { id: 'black', name: 'Gece Modu', color: 'bg-zinc-950' },
+];
+
 const AdminPanel: React.FC = () => {
   const [data, setData] = useState<AppData>(getStoredData());
   const [activeTab, setActiveTab] = useState<'announcements' | 'teachers' | 'students' | 'weather' | 'photos' | 'ai' | 'settings'>('announcements');
@@ -30,6 +39,8 @@ const AdminPanel: React.FC = () => {
   // Settings
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<ThemeType>(data.theme || 'slate');
+  const [schoolNameInput, setSchoolNameInput] = useState(data.schoolName);
 
   // Weather inputs
   const [cityInput, setCityInput] = useState(data.weather.city);
@@ -233,6 +244,17 @@ const AdminPanel: React.FC = () => {
   const handleSaveApiKey = () => {
     localStorage.setItem('GEMINI_API_KEY', apiKey);
     alert("API Anahtarı kaydedildi.");
+  };
+
+  const handleThemeChange = (theme: ThemeType) => {
+    setSelectedTheme(theme);
+    updateTheme(theme);
+  };
+
+  const handleSaveSchoolName = () => {
+    updateSchoolName(schoolNameInput);
+    refreshData();
+    alert("Okul adı güncellendi.");
   };
 
   const availableDistricts = DISTRICTS_BY_CITY[cityInput] || [];
@@ -645,54 +667,116 @@ const AdminPanel: React.FC = () => {
 
         {/* SETTINGS */}
         {activeTab === 'settings' && (
-             <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-                <div className="flex items-center gap-4 mb-6 border-b pb-4">
-                    <Settings size={32} className="text-slate-600" />
-                    <div>
-                        <h3 className="text-xl font-bold text-gray-800">Sistem Ayarları</h3>
-                        <p className="text-gray-500 text-sm">Uygulama genel yapılandırması.</p>
-                    </div>
-                </div>
+             <div className="max-w-2xl mx-auto space-y-8">
 
-                <div className="space-y-6">
-                    <div>
-                        <label className="block font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <Key size={18} className="text-yellow-600" />
-                            Google Gemini API Anahtarı
-                        </label>
-                        <p className="text-sm text-gray-500 mb-3">
-                            Yapay zeka özelliklerinin çalışması için (AI Asistanı, Duyuru Oluşturucu) geçerli bir anahtar gereklidir. 
-                            Bu anahtar tarayıcınızda saklanır.
-                        </p>
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
+                 {/* General Settings */}
+                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-4 mb-6 border-b pb-4">
+                        <Building2 size={32} className="text-blue-600" />
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800">Genel Ayarlar</h3>
+                            <p className="text-gray-500 text-sm">Okul adı ve genel bilgiler.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block font-medium text-gray-700 mb-2">Okul Adı (Panoda en üstte görünür)</label>
+                            <div className="flex gap-2">
                                 <input 
-                                    type={showApiKey ? "text" : "password"}
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-blue-500 outline-none font-mono"
-                                    placeholder="AIzaSy..."
+                                    type="text"
+                                    value={schoolNameInput}
+                                    onChange={(e) => setSchoolNameInput(e.target.value)}
+                                    className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Örn: ATATÜRK ANADOLU LİSESİ"
                                 />
                                 <button 
-                                    onClick={() => setShowApiKey(!showApiKey)}
-                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                                    onClick={handleSaveSchoolName}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
                                 >
-                                    {showApiKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    Kaydet
                                 </button>
                             </div>
-                            <button 
-                                onClick={handleSaveApiKey}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
+                        </div>
+                    </div>
+                 </div>
+                 
+                 {/* Theme Settings */}
+                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-4 mb-6 border-b pb-4">
+                        <Palette size={32} className="text-indigo-600" />
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800">Tema Ayarları</h3>
+                            <p className="text-gray-500 text-sm">Dijital panonun genel renk görünümünü seçin.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {THEMES.map(theme => (
+                            <button
+                                key={theme.id}
+                                onClick={() => handleThemeChange(theme.id)}
+                                className={`relative group flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${selectedTheme === theme.id ? 'border-indigo-500 bg-indigo-50' : 'border-transparent hover:bg-gray-50'}`}
                             >
-                                Kaydet
+                                <div className={`w-16 h-16 rounded-full shadow-lg ${theme.color}`}></div>
+                                <span className={`text-sm font-medium ${selectedTheme === theme.id ? 'text-indigo-700' : 'text-gray-600'}`}>
+                                    {theme.name}
+                                </span>
+                                {selectedTheme === theme.id && (
+                                    <div className="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>
+                                )}
                             </button>
+                        ))}
+                    </div>
+                 </div>
+
+                 {/* API Settings */}
+                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-4 mb-6 border-b pb-4">
+                        <Key size={32} className="text-yellow-600" />
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800">API Ayarları</h3>
+                            <p className="text-gray-500 text-sm">Google Gemini entegrasyonu.</p>
                         </div>
                     </div>
 
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm text-yellow-800">
-                        <strong>Bilgi:</strong> Eğer anahtar girmezseniz, sadece manuel veri girişi (Duyurular, Nöbetçiler) çalışır, yapay zeka özellikleri devre dışı kalır.
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Google Gemini API Anahtarı
+                            </label>
+                            <p className="text-sm text-gray-500 mb-3">
+                                Yapay zeka özelliklerinin çalışması için geçerli bir anahtar gereklidir.
+                            </p>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <input 
+                                        type={showApiKey ? "text" : "password"}
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                        placeholder="AIzaSy..."
+                                    />
+                                    <button 
+                                        onClick={() => setShowApiKey(!showApiKey)}
+                                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showApiKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={handleSaveApiKey}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
+                                >
+                                    Kaydet
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm text-yellow-800">
+                            <strong>Bilgi:</strong> Eğer anahtar girmezseniz, sadece manuel veri girişi çalışır.
+                        </div>
                     </div>
-                </div>
+                 </div>
              </div>
         )}
 

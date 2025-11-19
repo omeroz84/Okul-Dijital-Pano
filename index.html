@@ -29,7 +29,7 @@
         0% { transform: translate3d(0, 0, 0); }
         100% { transform: translate3d(-100%, 0, 0); }
       }
-      /* Loading State */
+      /* Loading State Style */
       #root:empty::before {
         content: 'Yükleniyor...';
         color: white;
@@ -40,7 +40,7 @@
         font-size: 1.5rem;
         font-family: sans-serif;
       }
-      /* Scrollbar */
+      /* Custom Scrollbar */
       .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
       }
@@ -55,14 +55,14 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
     "vite": "https://aistudiocdn.com/vite@^7.2.2",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
   }
 }
 </script>

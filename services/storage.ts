@@ -1,8 +1,10 @@
-import { AppData, Announcement, Teacher, Student, WeatherState, SlidePhoto, AiContent } from '../types';
+
+import { AppData, Announcement, Teacher, Student, WeatherState, SlidePhoto, AiContent, ThemeType } from '../types';
 
 const STORAGE_KEY = 'school_board_data_v2';
 
 const DEFAULT_DATA: AppData = {
+  schoolName: 'ATATÜRK ANADOLU LİSESİ',
   announcements: [
     { id: '1', title: 'Hoşgeldiniz', content: 'Yeni eğitim öğretim yılında tüm öğrencilerimize başarılar dileriz.', priority: 'high' },
     { id: '2', title: 'Sınav Takvimi', content: '1. Dönem 2. Yazılı sınav tarihleri web sitemizde yayınlanmıştır.', priority: 'normal' }
@@ -31,7 +33,8 @@ const DEFAULT_DATA: AppData = {
     title: 'Günün Sözü',
     content: 'Bilgi, paylaşıldıkça çoğalan tek hazinedir.',
     type: 'quote'
-  }
+  },
+  theme: 'slate'
 };
 
 export const getStoredData = (): AppData => {
@@ -42,6 +45,8 @@ export const getStoredData = (): AppData => {
     // Migration check for older data versions
     if (!parsed.dutyStudents) parsed.dutyStudents = DEFAULT_DATA.dutyStudents;
     if (!parsed.weather.district) parsed.weather.district = '';
+    if (!parsed.theme) parsed.theme = 'slate';
+    if (!parsed.schoolName) parsed.schoolName = DEFAULT_DATA.schoolName;
     return parsed;
   } catch (e) {
     console.error("Failed to parse stored data", e);
@@ -54,6 +59,12 @@ export const saveStoredData = (data: AppData) => {
 };
 
 // Specific updaters
+export const updateSchoolName = (name: string) => {
+  const data = getStoredData();
+  data.schoolName = name;
+  saveStoredData(data);
+};
+
 export const updateAnnouncements = (announcements: Announcement[]) => {
   const data = getStoredData();
   data.announcements = announcements;
@@ -87,5 +98,11 @@ export const updatePhotos = (photos: SlidePhoto[]) => {
 export const updateAiContent = (aiContent: AiContent) => {
   const data = getStoredData();
   data.aiContent = aiContent;
+  saveStoredData(data);
+};
+
+export const updateTheme = (theme: ThemeType) => {
+  const data = getStoredData();
+  data.theme = theme;
   saveStoredData(data);
 };

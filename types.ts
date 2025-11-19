@@ -1,3 +1,4 @@
+
 export interface Announcement {
   id: string;
   title: string;
@@ -38,11 +39,15 @@ export interface AiContent {
   type: 'quote' | 'fact' | 'info';
 }
 
+export type ThemeType = 'slate' | 'blue' | 'red' | 'green' | 'black';
+
 export interface AppData {
+  schoolName: string;
   announcements: Announcement[];
   teachers: Teacher[];
   dutyStudents: Student[];
   weather: WeatherState;
   photos: SlidePhoto[];
   aiContent: AiContent | null;
+  theme: ThemeType;
 }

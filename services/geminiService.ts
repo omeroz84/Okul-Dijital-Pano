@@ -1,9 +1,31 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiContent } from '../types';
 
-// Helper to get API key from storage or env
+// Helper to get API key from storage or env safely
 const getApiKey = (): string => {
-  return localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY || '';
+  // 1. Try Local Storage (Admin Panel setting - Primary for this app)
+  const localKey = localStorage.getItem('GEMINI_API_KEY');
+  if (localKey) return localKey;
+
+  // 2. Try Vite Environment Variable (if configured in .env)
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_KEY;
+  }
+
+  // 3. Try Process Environment (Node.js/Standard fallback)
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      // @ts-ignore
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
+  }
+
+  return '';
 };
 
 export const generateDailyContent = async (topic: string): Promise<AiContent> => {

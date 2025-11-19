@@ -25,11 +25,7 @@ export const generateDailyContent = async (topic: string): Promise<AiContent> =>
   const apiKey = getApiKey();
   
   if (!apiKey) {
-    return {
-      title: 'Anahtar Eksik',
-      content: 'Lütfen Admin Panel > Ayarlar kısmından Gemini API Anahtarınızı giriniz.',
-      type: 'info'
-    };
+    throw new Error("API Anahtarı eksik. Lütfen Ayarlar sekmesinden anahtarınızı giriniz.");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -37,8 +33,18 @@ export const generateDailyContent = async (topic: string): Promise<AiContent> =>
   try {
     const model = 'gemini-2.5-flash';
     const prompt = `Sen bir okul asistanısın. Okul panosu için "${topic}" hakkında kısa, ilgi çekici, motive edici veya bilgilendirici bir içerik oluştur.
-    İçerik Türkçe olmalı. Çok uzun olmamalı (maksimum 30 kelime).
-    JSON formatında yanıt ver.`;
+    
+    Kurallar:
+    1. İçerik Türkçe olmalı.
+    2. Maksimum 30 kelime olmalı.
+    3. Sadece saf JSON formatında yanıt ver. Markdown (backticks) kullanma.
+    
+    Beklenen JSON Formatı:
+    {
+      "title": "Başlık",
+      "content": "İçerik metni",
+      "type": "quote" | "fact" | "info"
+    }`;
 
     const response = await ai.models.generateContent({
       model,
@@ -48,8 +54,8 @@ export const generateDailyContent = async (topic: string): Promise<AiContent> =>
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: "Kısa ve dikkat çekici bir başlık" },
-            content: { type: Type.STRING, description: "İçerik metni" },
+            title: { type: Type.STRING, description: "Kısa başlık" },
+            content: { type: Type.STRING, description: "İçerik" },
             type: { type: Type.STRING, enum: ['quote', 'fact', 'info'] }
           },
           required: ["title", "content", "type"]
@@ -57,24 +63,27 @@ export const generateDailyContent = async (topic: string): Promise<AiContent> =>
       }
     });
 
-    const text = response.text;
-    if (!text) throw new Error("Empty response");
+    let text = response.text;
+    if (!text) throw new Error("Boş yanıt alındı.");
     
+    // Sanitize: Remove markdown code blocks if present
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
     return JSON.parse(text) as AiContent;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini generation error:", error);
-    return {
-      title: 'Gemini Hatası',
-      content: 'İçerik oluşturulurken bir sorun oluştu. API anahtarınızı kontrol edin veya farklı bir konu deneyin.',
-      type: 'info'
-    };
+    // Return a friendly error object or rethrow specific message
+    if (error.message && error.message.includes("API key")) {
+        throw new Error("API Anahtarı geçersiz veya süresi dolmuş.");
+    }
+    throw new Error("İçerik oluşturulamadı. Lütfen tekrar deneyin.");
   }
 };
 
 export const suggestAnnouncement = async (keywords: string): Promise<string> => {
   const apiKey = getApiKey();
-  if (!apiKey) return "Lütfen Ayarlardan API Anahtarı giriniz.";
+  if (!apiKey) return "Hata: API Anahtarı Ayarlardan girilmelidir.";
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -83,8 +92,9 @@ export const suggestAnnouncement = async (keywords: string): Promise<string> => 
       model: 'gemini-2.5-flash',
       contents: `Aşağıdaki anahtar kelimeleri kullanarak okul duyurusu için resmi ama samimi bir metin yaz: ${keywords}. Maksimum 2 cümle olsun.`,
     });
-    return response.text || "";
+    return response.text || "İçerik oluşturulamadı.";
   } catch (e) {
-    return "Duyuru oluşturulamadı. API Anahtarını kontrol ediniz.";
+    console.error(e);
+    return "Duyuru oluşturulamadı. Lütfen anahtarınızı kontrol edin.";
   }
 }

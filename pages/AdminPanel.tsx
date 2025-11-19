@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getStoredData, updateAnnouncements, updateTeachers, updatePhotos, updateWeather, updateAiContent, updateDutyStudents, updateTheme, updateSchoolName } from '../services/storage';
 import { AppData, Announcement, Teacher, SlidePhoto, Student, ThemeType } from '../types';
 import { generateDailyContent, suggestAnnouncement } from '../services/geminiService';
-import { Plus, Trash2, Save, Sparkles, LayoutDashboard, Monitor, Cloud, Users, Image as ImageIcon, Megaphone, GraduationCap, RefreshCw, Settings, Key, Eye, EyeOff, Palette, Building2 } from 'lucide-react';
+import { Plus, Trash2, Save, Sparkles, LayoutDashboard, Monitor, Cloud, Users, Image as ImageIcon, Megaphone, GraduationCap, RefreshCw, Settings, Key, Eye, EyeOff, Palette, Building2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const TURKISH_CITIES = [
     "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman", "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
@@ -34,11 +33,16 @@ const AdminPanel: React.FC = () => {
   // AI States
   const [aiTopic, setAiTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuccess, setAiSuccess] = useState(false);
   const [announceKeywords, setAnnounceKeywords] = useState('');
+  const [announceGeneratingId, setAnnounceGeneratingId] = useState<string | null>(null);
 
   // Settings
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [saveKeyStatus, setSaveKeyStatus] = useState<'idle' | 'saved'>('idle');
+  const [saveSchoolStatus, setSaveSchoolStatus] = useState<'idle' | 'saved'>('idle');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(data.theme || 'slate');
   const [schoolNameInput, setSchoolNameInput] = useState(data.schoolName);
 
@@ -48,11 +52,22 @@ const AdminPanel: React.FC = () => {
   const [tempInput, setTempInput] = useState(data.weather.temp);
   const [condInput, setCondInput] = useState(data.weather.condition);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+  const [weatherSaveStatus, setWeatherSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   useEffect(() => {
     const storedKey = localStorage.getItem('GEMINI_API_KEY');
     if (storedKey) setApiKey(storedKey);
   }, []);
+
+  // Auto-clear status messages after 3 seconds
+  useEffect(() => {
+      if (aiSuccess) { const t = setTimeout(() => setAiSuccess(false), 3000); return () => clearTimeout(t); }
+  }, [aiSuccess]);
+  
+  useEffect(() => { if (saveKeyStatus === 'saved') { const t = setTimeout(() => setSaveKeyStatus('idle'), 3000); return () => clearTimeout(t); } }, [saveKeyStatus]);
+  useEffect(() => { if (saveSchoolStatus === 'saved') { const t = setTimeout(() => setSaveSchoolStatus('idle'), 3000); return () => clearTimeout(t); } }, [saveSchoolStatus]);
+  useEffect(() => { if (weatherSaveStatus === 'saved') { const t = setTimeout(() => setWeatherSaveStatus('idle'), 3000); return () => clearTimeout(t); } }, [weatherSaveStatus]);
+
 
   const refreshData = () => {
     setData(getStoredData());
@@ -83,10 +98,10 @@ const AdminPanel: React.FC = () => {
 
   const handleGenerateAnnouncement = async (id: string) => {
       if(!announceKeywords) return;
-      setIsGenerating(true);
+      setAnnounceGeneratingId(id);
       const text = await suggestAnnouncement(announceKeywords);
       handleUpdateAnnouncement(id, 'content', text);
-      setIsGenerating(false);
+      setAnnounceGeneratingId(null);
       setAnnounceKeywords('');
   }
 
@@ -208,7 +223,6 @@ const AdminPanel: React.FC = () => {
             if (code >= 80) condition = "Sağanak Yağış";
             
             setCondInput(condition);
-            alert(`Hava durumu güncellendi: ${location.name} - ${w.temperature}°C ${condition}`);
         }
         setIsWeatherLoading(false);
   }
@@ -221,29 +235,34 @@ const AdminPanel: React.FC = () => {
         condition: condInput 
     });
     refreshData();
-    alert("Kaydedildi!");
+    setWeatherSaveStatus('saved');
   };
 
   // --- AI ---
   const handleGenerateAiContent = async () => {
     if (!aiTopic) return;
-    if (!localStorage.getItem('GEMINI_API_KEY')) {
-        alert("Lütfen önce 'Ayarlar' sekmesinden bir API anahtarı giriniz.");
-        return;
-    }
+    
     setIsGenerating(true);
-    const content = await generateDailyContent(aiTopic);
-    updateAiContent(content);
-    refreshData();
-    setIsGenerating(false);
-    setAiTopic('');
-    alert("İçerik oluşturuldu ve panoya gönderildi!");
+    setAiError(null);
+    setAiSuccess(false);
+
+    try {
+        const content = await generateDailyContent(aiTopic);
+        updateAiContent(content);
+        refreshData();
+        setAiSuccess(true);
+        setAiTopic('');
+    } catch (err: any) {
+        setAiError(err.message || "Bilinmeyen bir hata oluştu.");
+    } finally {
+        setIsGenerating(false);
+    }
   };
 
   // --- SETTINGS ---
   const handleSaveApiKey = () => {
-    localStorage.setItem('GEMINI_API_KEY', apiKey);
-    alert("API Anahtarı kaydedildi.");
+    localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
+    setSaveKeyStatus('saved');
   };
 
   const handleThemeChange = (theme: ThemeType) => {
@@ -254,13 +273,13 @@ const AdminPanel: React.FC = () => {
   const handleSaveSchoolName = () => {
     updateSchoolName(schoolNameInput);
     refreshData();
-    alert("Okul adı güncellendi.");
+    setSaveSchoolStatus('saved');
   };
 
   const availableDistricts = DISTRICTS_BY_CITY[cityInput] || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex font-sans">
+    <div className="min-h-screen bg-gray-50 flex font-sans text-gray-800">
       {/* Sidebar */}
       <div className="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20 shrink-0">
         <div className="p-6 border-b border-slate-800">
@@ -269,7 +288,7 @@ const AdminPanel: React.FC = () => {
                 Okul Pano
             </h1>
         </div>
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
             <button onClick={() => setActiveTab('announcements')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${activeTab === 'announcements' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}>
                 <Megaphone size={20} /> Duyurular
             </button>
@@ -304,7 +323,7 @@ const AdminPanel: React.FC = () => {
       <div className="flex-1 p-8 overflow-y-auto h-screen">
         
         {/* Header */}
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-8 flex justify-between items-center border-b pb-4">
             <h2 className="text-3xl font-bold text-gray-800">
                 {activeTab === 'announcements' && 'Duyuru Yönetimi'}
                 {activeTab === 'teachers' && 'Nöbetçi Öğretmen Listesi'}
@@ -321,7 +340,7 @@ const AdminPanel: React.FC = () => {
             <div className="space-y-6 max-w-4xl">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 className="text-lg font-semibold mb-4">Yeni Duyuru Ekle</h3>
-                    <button onClick={handleAddAnnouncement} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onClick={handleAddAnnouncement} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                         <Plus size={18} /> Ekle
                     </button>
                 </div>
@@ -332,13 +351,13 @@ const AdminPanel: React.FC = () => {
                                 <input 
                                     value={ann.title} 
                                     onChange={(e) => handleUpdateAnnouncement(ann.id, 'title', e.target.value)}
-                                    className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-semibold"
+                                    className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-gray-800"
                                     placeholder="Başlık"
                                 />
                                 <select 
                                     value={ann.priority}
                                     onChange={(e) => handleUpdateAnnouncement(ann.id, 'priority', e.target.value)}
-                                    className="border border-gray-300 rounded-lg p-2 outline-none"
+                                    className="border border-gray-300 rounded-lg p-2 outline-none text-gray-700"
                                 >
                                     <option value="normal">Normal Önem</option>
                                     <option value="high">Yüksek Önem</option>
@@ -347,30 +366,30 @@ const AdminPanel: React.FC = () => {
                             <textarea 
                                 value={ann.content}
                                 onChange={(e) => handleUpdateAnnouncement(ann.id, 'content', e.target.value)}
-                                className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none w-full h-24 resize-none"
+                                className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none w-full h-24 resize-none text-gray-700"
                                 placeholder="Duyuru metni..."
                             />
                              {/* AI Helper for Announcement */}
-                            <div className="flex items-center gap-2 bg-purple-50 p-3 rounded-lg">
+                            <div className="flex items-center gap-2 bg-purple-50 p-3 rounded-lg border border-purple-100">
                                 <Sparkles size={16} className="text-purple-500" />
                                 <input 
                                     type="text" 
                                     placeholder="AI ile yaz: örn. '29 ekim kutlaması'" 
-                                    className="flex-1 bg-transparent border-b border-purple-200 focus:border-purple-500 outline-none text-sm px-2 py-1"
+                                    className="flex-1 bg-transparent border-b border-purple-200 focus:border-purple-500 outline-none text-sm px-2 py-1 text-purple-900 placeholder-purple-300"
                                     value={announceKeywords}
                                     onChange={(e) => setAnnounceKeywords(e.target.value)}
                                 />
                                 <button 
                                     onClick={() => handleGenerateAnnouncement(ann.id)}
-                                    disabled={isGenerating}
-                                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-50"
+                                    disabled={announceGeneratingId === ann.id}
+                                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-70 flex items-center gap-1 min-w-[80px] justify-center transition-colors"
                                 >
-                                    {isGenerating ? '...' : 'Oluştur'}
+                                    {announceGeneratingId === ann.id ? <Loader2 size={12} className="animate-spin" /> : 'Oluştur'}
                                 </button>
                             </div>
 
                             <div className="flex justify-end">
-                                <button onClick={() => handleRemoveAnnouncement(ann.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1">
+                                <button onClick={() => handleRemoveAnnouncement(ann.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors">
                                     <Trash2 size={18} /> Sil
                                 </button>
                             </div>
@@ -384,14 +403,14 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'teachers' && (
              <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <button onClick={handleAddTeacher} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onClick={handleAddTeacher} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                         <Plus size={18} /> Yeni Nöbetçi Ekle
                     </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data.teachers.map(t => (
                         <div key={t.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative group border-l-4 border-l-blue-500">
-                            <button onClick={() => handleRemoveTeacher(t.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500">
+                            <button onClick={() => handleRemoveTeacher(t.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
                                 <Trash2 size={18} />
                             </button>
                             <div className="space-y-3 mt-2">
@@ -424,14 +443,14 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'students' && (
              <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <button onClick={handleAddStudent} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onClick={handleAddStudent} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                         <Plus size={18} /> Yeni Nöbetçi Öğrenci Ekle
                     </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data.dutyStudents.map(s => (
                         <div key={s.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative group border-l-4 border-l-green-500">
-                            <button onClick={() => handleRemoveStudent(s.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500">
+                            <button onClick={() => handleRemoveStudent(s.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
                                 <Trash2 size={18} />
                             </button>
                             <div className="space-y-3 mt-2">
@@ -475,7 +494,7 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'photos' && (
              <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <button onClick={handleAddPhoto} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onClick={handleAddPhoto} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                         <Plus size={18} /> Yeni Fotoğraf Ekle
                     </button>
                 </div>
@@ -504,7 +523,7 @@ const AdminPanel: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            <button onClick={() => handleRemovePhoto(p.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg self-center">
+                            <button onClick={() => handleRemovePhoto(p.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg self-center transition-colors">
                                 <Trash2 size={20} />
                             </button>
                         </div>
@@ -531,7 +550,7 @@ const AdminPanel: React.FC = () => {
                             <select 
                                 value={cityInput}
                                 onChange={handleCityChange}
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white" 
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" 
                             >
                                 <option value="">Seçiniz...</option>
                                 {TURKISH_CITIES.map(city => (
@@ -545,7 +564,7 @@ const AdminPanel: React.FC = () => {
                                 <select
                                     value={districtInput}
                                     onChange={(e) => setDistrictInput(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800"
                                 >
                                     <option value="">Tümü (Merkez)</option>
                                     {availableDistricts.map(d => (
@@ -557,7 +576,7 @@ const AdminPanel: React.FC = () => {
                                     value={districtInput}
                                     onChange={(e) => setDistrictInput(e.target.value)}
                                     placeholder="Merkez, Kadıköy..."
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800" 
                                 />
                             )}
                         </div>
@@ -568,7 +587,7 @@ const AdminPanel: React.FC = () => {
                         <button 
                             onClick={fetchWeather}
                             disabled={isWeatherLoading || !cityInput}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 transition-colors"
                         >
                             {isWeatherLoading ? <RefreshCw className="animate-spin" size={16} /> : <Cloud size={16} />}
                             Verileri Getir
@@ -584,7 +603,7 @@ const AdminPanel: React.FC = () => {
                                     type="number"
                                     value={tempInput}
                                     onChange={(e) => setTempInput(Number(e.target.value))}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800" 
                                 />
                             </div>
                             <div>
@@ -592,7 +611,7 @@ const AdminPanel: React.FC = () => {
                                 <select 
                                     value={condInput}
                                     onChange={(e) => setCondInput(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white" 
+                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" 
                                 >
                                     <option value="Güneşli">Güneşli</option>
                                     <option value="Açık">Açık</option>
@@ -608,8 +627,12 @@ const AdminPanel: React.FC = () => {
                         </div>
                     </div>
                     
-                    <button onClick={handleSaveWeather} className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-green-200">
-                        <Save size={20} /> Ayarları Kaydet
+                    <button 
+                        onClick={handleSaveWeather} 
+                        className={`w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg transition-all duration-300 ${weatherSaveStatus === 'saved' ? 'bg-green-600 text-white shadow-green-200' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200'}`}
+                    >
+                        {weatherSaveStatus === 'saved' ? <CheckCircle size={20} /> : <Save size={20} />} 
+                        {weatherSaveStatus === 'saved' ? 'Kaydedildi' : 'Ayarları Kaydet'}
                     </button>
                 </div>
             </div>
@@ -634,18 +657,38 @@ const AdminPanel: React.FC = () => {
                                     className="flex-1 rounded-lg px-4 py-3 text-gray-900 outline-none focus:ring-4 ring-purple-400/50"
                                     value={aiTopic}
                                     onChange={(e) => setAiTopic(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleGenerateAiContent()}
                                 />
                                 <button 
                                     onClick={handleGenerateAiContent}
                                     disabled={isGenerating || !aiTopic}
-                                    className="bg-white text-purple-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="bg-white text-purple-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 min-w-[100px] justify-center"
                                 >
-                                    {isGenerating ? 'Üretiliyor...' : 'Üret'}
+                                    {isGenerating ? <Loader2 className="animate-spin" /> : 'Üret'}
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                {/* AI Error Message */}
+                {aiError && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3">
+                         <AlertCircle className="text-red-500 shrink-0 mt-0.5" />
+                         <div>
+                             <h4 className="font-bold text-red-800">Hata Oluştu</h4>
+                             <p className="text-red-700 text-sm">{aiError}</p>
+                         </div>
+                    </div>
+                )}
+
+                 {/* AI Success Message */}
+                 {aiSuccess && (
+                    <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg flex items-center gap-3 animate-pulse">
+                         <CheckCircle className="text-green-500 shrink-0" />
+                         <p className="text-green-800 font-medium">İçerik başarıyla oluşturuldu ve panoya gönderildi!</p>
+                    </div>
+                )}
 
                 {/* Current Content Preview */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -686,14 +729,14 @@ const AdminPanel: React.FC = () => {
                                     type="text"
                                     value={schoolNameInput}
                                     onChange={(e) => setSchoolNameInput(e.target.value)}
-                                    className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
                                     placeholder="Örn: ATATÜRK ANADOLU LİSESİ"
                                 />
                                 <button 
                                     onClick={handleSaveSchoolName}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
+                                    className={`px-6 rounded-lg font-semibold text-white transition-all duration-300 min-w-[100px] flex items-center justify-center ${saveSchoolStatus === 'saved' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                                 >
-                                    Kaydet
+                                    {saveSchoolStatus === 'saved' ? <CheckCircle size={20} /> : 'Kaydet'}
                                 </button>
                             </div>
                         </div>
@@ -753,7 +796,7 @@ const AdminPanel: React.FC = () => {
                                         type={showApiKey ? "text" : "password"}
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-gray-800"
                                         placeholder="AIzaSy..."
                                     />
                                     <button 
@@ -765,9 +808,9 @@ const AdminPanel: React.FC = () => {
                                 </div>
                                 <button 
                                     onClick={handleSaveApiKey}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold"
+                                    className={`px-6 rounded-lg font-semibold text-white transition-all duration-300 min-w-[100px] flex items-center justify-center ${saveKeyStatus === 'saved' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                                 >
-                                    Kaydet
+                                     {saveKeyStatus === 'saved' ? <CheckCircle size={20} /> : 'Kaydet'}
                                 </button>
                             </div>
                         </div>

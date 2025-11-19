@@ -9,6 +9,7 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        background-color: #0f172a; /* Slate-900 matches app theme */
       }
       /* Custom scrollbar for the ticker */
       .ticker-wrap {
@@ -26,6 +27,17 @@
         0% { transform: translate3d(0, 0, 0); }
         100% { transform: translate3d(-100%, 0, 0); }
       }
+      /* Loading spinner styles */
+      #root:empty::before {
+        content: 'Yükleniyor...';
+        color: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
     </style>
   <script type="importmap">
 {
@@ -34,14 +46,16 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
-    <!-- Bu satır React uygulamasını başlatır. Dosya adının src/index.tsx olduğundan emin olun -->
+    <!-- React Uygulaması Başlatılıyor -->
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

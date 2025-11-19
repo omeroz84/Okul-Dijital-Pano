@@ -26,6 +26,10 @@ const THEMES: { id: ThemeType, name: string, color: string }[] = [
     { id: 'black', name: 'Gece Modu', color: 'bg-zinc-950' },
 ];
 
+// Shared Input Style Class
+const INPUT_STYLE = "w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all";
+const LABEL_STYLE = "block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5";
+
 const AdminPanel: React.FC = () => {
   const [data, setData] = useState<AppData>(getStoredData());
   const [activeTab, setActiveTab] = useState<'announcements' | 'teachers' | 'students' | 'weather' | 'photos' | 'ai' | 'settings'>('announcements');
@@ -279,7 +283,7 @@ const AdminPanel: React.FC = () => {
   const availableDistricts = DISTRICTS_BY_CITY[cityInput] || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex font-sans text-gray-800">
+    <div className="min-h-screen bg-gray-50 flex font-sans text-gray-900">
       {/* Sidebar */}
       <div className="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20 shrink-0">
         <div className="p-6 border-b border-slate-800">
@@ -324,7 +328,7 @@ const AdminPanel: React.FC = () => {
         
         {/* Header */}
         <header className="mb-8 flex justify-between items-center border-b pb-4">
-            <h2 className="text-3xl font-bold text-gray-800">
+            <h2 className="text-3xl font-bold text-gray-900">
                 {activeTab === 'announcements' && 'Duyuru Yönetimi'}
                 {activeTab === 'teachers' && 'Nöbetçi Öğretmen Listesi'}
                 {activeTab === 'students' && 'Nöbetçi Öğrenci Listesi'}
@@ -339,7 +343,7 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'announcements' && (
             <div className="space-y-6 max-w-4xl">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold mb-4">Yeni Duyuru Ekle</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-gray-800">Yeni Duyuru Ekle</h3>
                     <button onClick={handleAddAnnouncement} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                         <Plus size={18} /> Ekle
                     </button>
@@ -348,49 +352,58 @@ const AdminPanel: React.FC = () => {
                     {data.announcements.map(ann => (
                         <div key={ann.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input 
-                                    value={ann.title} 
-                                    onChange={(e) => handleUpdateAnnouncement(ann.id, 'title', e.target.value)}
-                                    className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-gray-800"
-                                    placeholder="Başlık"
-                                />
-                                <select 
-                                    value={ann.priority}
-                                    onChange={(e) => handleUpdateAnnouncement(ann.id, 'priority', e.target.value)}
-                                    className="border border-gray-300 rounded-lg p-2 outline-none text-gray-700"
-                                >
-                                    <option value="normal">Normal Önem</option>
-                                    <option value="high">Yüksek Önem</option>
-                                </select>
+                                <div>
+                                    <label className={LABEL_STYLE}>Başlık</label>
+                                    <input 
+                                        value={ann.title} 
+                                        onChange={(e) => handleUpdateAnnouncement(ann.id, 'title', e.target.value)}
+                                        className={INPUT_STYLE}
+                                        placeholder="Duyuru Başlığı"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={LABEL_STYLE}>Önem Derecesi</label>
+                                    <select 
+                                        value={ann.priority}
+                                        onChange={(e) => handleUpdateAnnouncement(ann.id, 'priority', e.target.value)}
+                                        className={INPUT_STYLE}
+                                    >
+                                        <option value="normal">Normal Önem</option>
+                                        <option value="high">Yüksek Önem</option>
+                                    </select>
+                                </div>
                             </div>
-                            <textarea 
-                                value={ann.content}
-                                onChange={(e) => handleUpdateAnnouncement(ann.id, 'content', e.target.value)}
-                                className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none w-full h-24 resize-none text-gray-700"
-                                placeholder="Duyuru metni..."
-                            />
+                            <div>
+                                <label className={LABEL_STYLE}>Duyuru İçeriği</label>
+                                <textarea 
+                                    value={ann.content}
+                                    onChange={(e) => handleUpdateAnnouncement(ann.id, 'content', e.target.value)}
+                                    className={`${INPUT_STYLE} h-24 resize-none`}
+                                    placeholder="Duyuru metnini buraya giriniz..."
+                                />
+                            </div>
                              {/* AI Helper for Announcement */}
                             <div className="flex items-center gap-2 bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                <Sparkles size={16} className="text-purple-500" />
+                                <Sparkles size={16} className="text-purple-600" />
                                 <input 
                                     type="text" 
                                     placeholder="AI ile yaz: örn. '29 ekim kutlaması'" 
-                                    className="flex-1 bg-transparent border-b border-purple-200 focus:border-purple-500 outline-none text-sm px-2 py-1 text-purple-900 placeholder-purple-300"
+                                    className="flex-1 bg-white border border-purple-200 rounded-md px-3 py-2 text-sm text-gray-900 focus:border-purple-500 outline-none placeholder-gray-400"
                                     value={announceKeywords}
                                     onChange={(e) => setAnnounceKeywords(e.target.value)}
                                 />
                                 <button 
                                     onClick={() => handleGenerateAnnouncement(ann.id)}
                                     disabled={announceGeneratingId === ann.id}
-                                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-70 flex items-center gap-1 min-w-[80px] justify-center transition-colors"
+                                    className="text-xs bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:opacity-70 flex items-center gap-1 min-w-[80px] justify-center transition-colors font-medium"
                                 >
-                                    {announceGeneratingId === ann.id ? <Loader2 size={12} className="animate-spin" /> : 'Oluştur'}
+                                    {announceGeneratingId === ann.id ? <Loader2 size={14} className="animate-spin" /> : 'Oluştur'}
                                 </button>
                             </div>
 
                             <div className="flex justify-end">
-                                <button onClick={() => handleRemoveAnnouncement(ann.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors">
-                                    <Trash2 size={18} /> Sil
+                                <button onClick={() => handleRemoveAnnouncement(ann.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors font-medium text-sm">
+                                    <Trash2 size={18} /> Bu Duyuruyu Sil
                                 </button>
                             </div>
                         </div>
@@ -413,22 +426,22 @@ const AdminPanel: React.FC = () => {
                             <button onClick={() => handleRemoveTeacher(t.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
                                 <Trash2 size={18} />
                             </button>
-                            <div className="space-y-3 mt-2">
+                            <div className="space-y-4 mt-2">
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Öğretmen Adı</label>
+                                    <label className={LABEL_STYLE}>Öğretmen Adı</label>
                                     <input 
                                         value={t.name} 
                                         onChange={(e) => handleUpdateTeacher(t.id, 'name', e.target.value)}
-                                        className="w-full border-b border-gray-300 focus:border-blue-500 outline-none py-1 font-medium text-gray-800"
+                                        className={INPUT_STYLE}
                                         placeholder="Ad Soyad"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Nöbet Yeri</label>
+                                    <label className={LABEL_STYLE}>Nöbet Yeri</label>
                                     <input 
                                         value={t.role} 
                                         onChange={(e) => handleUpdateTeacher(t.id, 'role', e.target.value)}
-                                        className="w-full border-b border-gray-300 focus:border-blue-500 outline-none py-1 text-gray-600"
+                                        className={INPUT_STYLE}
                                         placeholder="Örn: Kat 1"
                                     />
                                 </div>
@@ -453,33 +466,33 @@ const AdminPanel: React.FC = () => {
                             <button onClick={() => handleRemoveStudent(s.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
                                 <Trash2 size={18} />
                             </button>
-                            <div className="space-y-3 mt-2">
+                            <div className="space-y-4 mt-2">
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Öğrenci Adı</label>
+                                    <label className={LABEL_STYLE}>Öğrenci Adı</label>
                                     <input 
                                         value={s.name} 
                                         onChange={(e) => handleUpdateStudent(s.id, 'name', e.target.value)}
-                                        className="w-full border-b border-gray-300 focus:border-green-500 outline-none py-1 font-medium text-gray-800"
+                                        className={INPUT_STYLE}
                                         placeholder="Ad Soyad"
                                     />
                                 </div>
-                                <div className="flex gap-2">
-                                    <div className="flex-1">
-                                        <label className="text-xs font-semibold text-gray-500 uppercase">Sınıf</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="col-span-1">
+                                        <label className={LABEL_STYLE}>Sınıf</label>
                                         <input 
                                             value={s.class} 
                                             onChange={(e) => handleUpdateStudent(s.id, 'class', e.target.value)}
-                                            className="w-full border-b border-gray-300 focus:border-green-500 outline-none py-1 text-gray-600"
-                                            placeholder="Örn: 11-A"
+                                            className={INPUT_STYLE}
+                                            placeholder="11-A"
                                         />
                                     </div>
-                                    <div className="flex-[2]">
-                                        <label className="text-xs font-semibold text-gray-500 uppercase">Görev Yeri</label>
+                                    <div className="col-span-2">
+                                        <label className={LABEL_STYLE}>Görev Yeri</label>
                                         <input 
                                             value={s.role} 
                                             onChange={(e) => handleUpdateStudent(s.id, 'role', e.target.value)}
-                                            className="w-full border-b border-gray-300 focus:border-green-500 outline-none py-1 text-gray-600"
-                                            placeholder="Örn: Danışma"
+                                            className={INPUT_STYLE}
+                                            placeholder="Danışma"
                                         />
                                     </div>
                                 </div>
@@ -506,19 +519,20 @@ const AdminPanel: React.FC = () => {
                             </div>
                             <div className="flex-1 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Görsel URL</label>
+                                    <label className={LABEL_STYLE}>Görsel URL</label>
                                     <input 
                                         value={p.url}
                                         onChange={(e) => handleUpdatePhoto(p.id, 'url', e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm font-mono text-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className={INPUT_STYLE}
+                                        placeholder="https://..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Alt Başlık (İsteğe Bağlı)</label>
+                                    <label className={LABEL_STYLE}>Alt Başlık</label>
                                     <input 
                                         value={p.caption}
                                         onChange={(e) => handleUpdatePhoto(p.id, 'caption', e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className={INPUT_STYLE}
                                         placeholder="Örn: Okul Kermesi 2024"
                                     />
                                 </div>
@@ -546,11 +560,11 @@ const AdminPanel: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block font-medium text-gray-700 mb-1">İl Seçimi</label>
+                            <label className={LABEL_STYLE}>İl Seçimi</label>
                             <select 
                                 value={cityInput}
                                 onChange={handleCityChange}
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" 
+                                className={INPUT_STYLE}
                             >
                                 <option value="">Seçiniz...</option>
                                 {TURKISH_CITIES.map(city => (
@@ -559,12 +573,12 @@ const AdminPanel: React.FC = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block font-medium text-gray-700 mb-1">İlçe (İsteğe Bağlı)</label>
+                            <label className={LABEL_STYLE}>İlçe (İsteğe Bağlı)</label>
                             {availableDistricts.length > 0 ? (
                                 <select
                                     value={districtInput}
                                     onChange={(e) => setDistrictInput(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800"
+                                    className={INPUT_STYLE}
                                 >
                                     <option value="">Tümü (Merkez)</option>
                                     {availableDistricts.map(d => (
@@ -576,7 +590,7 @@ const AdminPanel: React.FC = () => {
                                     value={districtInput}
                                     onChange={(e) => setDistrictInput(e.target.value)}
                                     placeholder="Merkez, Kadıköy..."
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800" 
+                                    className={INPUT_STYLE}
                                 />
                             )}
                         </div>
@@ -598,20 +612,20 @@ const AdminPanel: React.FC = () => {
                          <h4 className="font-semibold mb-4 text-gray-600">Manuel Düzenleme</h4>
                          <div className="grid grid-cols-2 gap-6">
                             <div>
-                                <label className="block font-medium text-gray-700 mb-1">Sıcaklık (°C)</label>
+                                <label className={LABEL_STYLE}>Sıcaklık (°C)</label>
                                 <input 
                                     type="number"
                                     value={tempInput}
                                     onChange={(e) => setTempInput(Number(e.target.value))}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800" 
+                                    className={INPUT_STYLE}
                                 />
                             </div>
                             <div>
-                                <label className="block font-medium text-gray-700 mb-1">Durum</label>
+                                <label className={LABEL_STYLE}>Durum</label>
                                 <select 
                                     value={condInput}
                                     onChange={(e) => setCondInput(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" 
+                                    className={INPUT_STYLE}
                                 >
                                     <option value="Güneşli">Güneşli</option>
                                     <option value="Açık">Açık</option>
@@ -654,7 +668,7 @@ const AdminPanel: React.FC = () => {
                                 <input 
                                     type="text" 
                                     placeholder="Konu girin (örn: Bilim, Uzay, Atatürk, Matematik)" 
-                                    className="flex-1 rounded-lg px-4 py-3 text-gray-900 outline-none focus:ring-4 ring-purple-400/50"
+                                    className="flex-1 rounded-lg px-4 py-3 text-gray-900 outline-none focus:ring-4 ring-purple-400/50 bg-white placeholder-gray-400"
                                     value={aiTopic}
                                     onChange={(e) => setAiTopic(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleGenerateAiContent()}
@@ -723,13 +737,13 @@ const AdminPanel: React.FC = () => {
                     </div>
                     <div className="space-y-4">
                         <div>
-                            <label className="block font-medium text-gray-700 mb-2">Okul Adı (Panoda en üstte görünür)</label>
+                            <label className={LABEL_STYLE}>Okul Adı (Panoda en üstte görünür)</label>
                             <div className="flex gap-2">
                                 <input 
                                     type="text"
                                     value={schoolNameInput}
                                     onChange={(e) => setSchoolNameInput(e.target.value)}
-                                    className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
+                                    className={INPUT_STYLE}
                                     placeholder="Örn: ATATÜRK ANADOLU LİSESİ"
                                 />
                                 <button 
@@ -796,7 +810,7 @@ const AdminPanel: React.FC = () => {
                                         type={showApiKey ? "text" : "password"}
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-gray-800"
+                                        className={`${INPUT_STYLE} pr-10 font-mono`}
                                         placeholder="AIzaSy..."
                                     />
                                     <button 

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getStoredData } from '../services/storage';
@@ -9,12 +8,14 @@ import DutyTeachers from '../components/DutyTeachers';
 import DutyStudents from '../components/DutyStudents';
 import PhotoSlider from '../components/PhotoSlider';
 import AiWidget from '../components/AiWidget';
+import QrWidget from '../components/QrWidget';
+import WidgetCard from '../components/WidgetCard';
 import { Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<AppData>(getStoredData());
 
-  // Poll for updates every 5 seconds so changes in admin panel reflect immediately
   useEffect(() => {
     const interval = setInterval(() => {
       setData(getStoredData());
@@ -22,101 +23,122 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getThemeClass = (theme: ThemeType) => {
+  const getThemeColors = (theme: ThemeType) => {
       switch(theme) {
-          case 'blue': return 'bg-blue-950';
-          case 'red': return 'bg-red-950';
-          case 'green': return 'bg-green-950';
-          case 'black': return 'bg-zinc-950';
+          case 'blue': return 'from-blue-950 to-slate-950';
+          case 'red': return 'from-red-950 to-slate-950';
+          case 'green': return 'from-green-950 to-slate-950';
+          case 'black': return 'from-zinc-950 to-black';
           case 'slate':
-          default: return 'bg-slate-900';
+          default: return 'from-slate-900 to-slate-950';
       }
   };
 
-  const themeClass = getThemeClass(data.theme);
-
   return (
-    <div className={`w-screen h-screen ${themeClass} overflow-hidden flex flex-col relative font-inter transition-colors duration-1000`}>
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+    <div className={`w-screen h-screen bg-gradient-to-br ${getThemeColors(data.theme)} overflow-hidden flex flex-col relative font-inter text-white selection:bg-blue-500/30`}>
       
-      {/* Visible Admin Link */}
-      <Link 
-        to="/admin" 
-        className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white px-3 py-2 rounded-full backdrop-blur-sm transition-all duration-300 group"
-        title="Yönetim Paneli"
-      >
-        <Settings size={16} className="group-hover:rotate-90 transition-transform duration-500" />
-        <span className="text-xs font-medium opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-300 whitespace-nowrap">Yönetim</span>
+      {/* Background Ambient Noise/Pattern */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      {/* Admin Link */}
+      <Link to="/admin" className="absolute top-6 right-6 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-white/10 backdrop-blur-md p-2 rounded-full hover:bg-white/20">
+            <Settings size={20} className="text-white/70" />
+        </div>
       </Link>
 
-      {/* School Header */}
-      <header className="w-full text-center py-3 z-20 bg-white/5 backdrop-blur-sm border-b border-white/5 shadow-lg">
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/80 uppercase tracking-widest drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" style={{textShadow: '0 4px 10px rgba(0,0,0,0.5)'}}>
-              {data.schoolName || 'ATATÜRK ANADOLU LİSESİ'}
-          </h1>
+      {/* Header */}
+      <header className="px-8 py-5 z-10 flex justify-between items-end shrink-0">
+          <div>
+              <motion.h1 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-3xl md:text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60"
+              >
+                {data.schoolName}
+              </motion.h1>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="h-1 w-24 bg-blue-500 mt-2 rounded-full"
+              />
+          </div>
+          <div className="text-right hidden md:block">
+             <div className="text-xs font-bold text-white/40 uppercase tracking-[0.3em]">Dijital Bilgilendirme Panosu</div>
+          </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 p-6 pb-2 flex gap-6 overflow-hidden z-10 min-h-0">
-        
-        {/* Left Column: Large Visuals (60%) */}
-        <div className="flex-[3] flex flex-col gap-6 h-full">
-           <PhotoSlider photos={data.photos} />
-        </div>
+      {/* BENTO GRID LAYOUT */}
+      <main className="flex-1 p-8 pt-2 min-h-0 z-10">
+        <div className="grid grid-cols-4 grid-rows-3 gap-6 h-full w-full">
+            
+            {/* 1. MAIN VISUAL (2x2) */}
+            <WidgetCard className="col-span-2 row-span-2 bg-black/40 !p-0" delay={0.1}>
+                <PhotoSlider photos={data.photos} />
+            </WidgetCard>
 
-        {/* Right Column: Info Widgets (40%) */}
-        <div className="flex-[2] flex flex-col gap-4 h-full min-h-0">
-          {/* Top: Clock & Weather Row */}
-          <div className="h-36 flex gap-4 shrink-0">
-             <div className="flex-1 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl shadow-lg border border-white/10 backdrop-blur-md overflow-hidden">
+            {/* 2. CLOCK (1x1) */}
+            <WidgetCard className="col-span-1 row-span-1" delay={0.2}>
                 <Clock />
-             </div>
-             <div className="flex-1">
+            </WidgetCard>
+
+            {/* 3. WEATHER (1x1) */}
+            <WidgetCard className="col-span-1 row-span-1" delay={0.3}>
                 <WeatherWidget weather={data.weather} />
-             </div>
-          </div>
+            </WidgetCard>
 
-          {/* Middle: Duty Sections (Split Row) */}
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
-             <div className="flex-1 h-full">
+            {/* 4. TEACHERS (1x2 Vertical) */}
+            <WidgetCard title="Nöbetçi Öğretmenler" className="col-span-1 row-span-2" delay={0.4}>
                 <DutyTeachers teachers={data.teachers} />
-             </div>
-             <div className="flex-1 h-full">
+            </WidgetCard>
+
+            {/* 5. STUDENTS (1x1) */}
+            <WidgetCard title="Nöbetçi Öğrenciler" className="col-span-1 row-span-1" delay={0.5}>
                 <DutyStudents students={data.dutyStudents} />
-             </div>
-          </div>
+            </WidgetCard>
+            
+             {/* 6. AI CONTENT (2x1 Wide) */}
+             <WidgetCard className="col-span-2 row-span-1" delay={0.6}>
+                <AiWidget content={data.aiContent} />
+            </WidgetCard>
 
-          {/* Bottom: AI Widget */}
-          <div className="h-auto shrink-0">
-            <AiWidget content={data.aiContent} />
-          </div>
-        </div>
-      </div>
+            {/* 7. QR WIDGET (1x1) */}
+            <WidgetCard className="col-span-1 row-span-1 !bg-white !p-0" delay={0.7}>
+                <QrWidget />
+            </WidgetCard>
 
-      {/* Footer: Ticker */}
-      <div className="h-14 shrink-0 bg-yellow-500 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] flex items-center relative overflow-hidden">
-        <div className="bg-yellow-600 h-full px-6 flex items-center z-10 font-black text-yellow-950 uppercase tracking-widest shadow-lg whitespace-nowrap">
-            📢 Duyurular
         </div>
-        <div className="ticker-wrap flex-1 flex items-center">
-            <div className="ticker text-2xl font-bold text-yellow-900">
-                {data.announcements.map((a, i) => (
-                    <span key={a.id} className="mx-12 inline-block">
-                        <span className="mr-2 text-yellow-700">●</span> 
-                        <span className="font-black">{a.title}:</span> {a.content}
+      </main>
+
+      {/* Footer Ticker */}
+      <div className="h-16 shrink-0 bg-black/40 backdrop-blur-xl border-t border-white/10 z-20 flex items-center">
+         <div className="bg-blue-600 h-full px-8 flex items-center font-black text-white uppercase tracking-widest text-lg shadow-[0_0_20px_rgba(37,99,235,0.5)] z-10">
+            Duyurular
+         </div>
+         <div className="ticker-wrap flex-1 relative">
+            <div className="ticker text-2xl font-medium text-white/90">
+                {data.announcements.length > 0 ? data.announcements.map((a) => (
+                    <span key={a.id} className="mx-16 inline-flex items-center gap-3">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        <span className="font-bold text-blue-200">{a.title}:</span> 
+                        <span>{a.content}</span>
                     </span>
-                ))}
-                 {/* Duplicate for seamless loop if few items */}
-                 {data.announcements.map((a, i) => (
-                    <span key={a.id + '_dup'} className="mx-12 inline-block">
-                        <span className="mr-2 text-yellow-700">●</span> 
-                        <span className="font-black">{a.title}:</span> {a.content}
+                )) : <span className="mx-10">Henüz duyuru eklenmedi.</span>}
+                 {/* Duplicates for smooth loop */}
+                 {data.announcements.length > 0 && data.announcements.map((a) => (
+                    <span key={a.id + '_dup'} className="mx-16 inline-flex items-center gap-3">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        <span className="font-bold text-blue-200">{a.title}:</span> 
+                        <span>{a.content}</span>
                     </span>
                 ))}
             </div>
-        </div>
+         </div>
       </div>
+
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Teacher } from '../types';
-import { UserCircle } from 'lucide-react';
 
 interface DutyTeachersProps {
   teachers: Teacher[];
@@ -8,27 +7,23 @@ interface DutyTeachersProps {
 
 const DutyTeachers: React.FC<DutyTeachersProps> = ({ teachers }) => {
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 h-full flex flex-col border border-white/10 shadow-xl">
-      <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-        <span className="bg-blue-500 w-2 h-8 rounded-full block"></span>
-        Nöbetçi Öğretmenler
-      </h2>
-      <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-        {teachers.map((teacher) => (
-          <div key={teacher.id} className="flex items-center bg-white/5 p-3 rounded-xl border border-white/5">
-            <div className="mr-4">
-                <UserCircle className="w-10 h-10 text-blue-300" />
-            </div>
-            <div>
-              <div className="text-white font-semibold text-lg">{teacher.name}</div>
-              <div className="text-blue-200 text-sm uppercase tracking-wider">{teacher.role}</div>
-            </div>
+    <div className="h-full overflow-y-auto custom-scrollbar p-4 space-y-3">
+      {teachers.map((teacher, idx) => (
+        <div key={teacher.id} className="group flex items-center gap-4 bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/5 transition-all duration-300">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shrink-0">
+              {teacher.name.charAt(0)}
           </div>
-        ))}
-        {teachers.length === 0 && (
-            <div className="text-white/50 italic">Nöbetçi bilgisi girilmedi.</div>
-        )}
-      </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-bold text-sm truncate">{teacher.name}</div>
+            <div className="text-blue-200/70 text-xs uppercase tracking-wider font-medium">{teacher.role}</div>
+          </div>
+        </div>
+      ))}
+      {teachers.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center text-white/30">
+              <p className="text-sm">Veri Girişi Yapılmadı</p>
+          </div>
+      )}
     </div>
   );
 };

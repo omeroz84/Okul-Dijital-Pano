@@ -7,22 +7,15 @@ const getApiKey = (): string => {
   const localKey = localStorage.getItem('GEMINI_API_KEY');
   if (localKey) return localKey;
 
-  // 2. Try Vite Environment Variable (if configured in .env)
-  // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
-    // @ts-ignore
-    return import.meta.env.VITE_API_KEY;
-  }
-
-  // 3. Try Process Environment (Node.js/Standard fallback)
+  // 2. Try Vite Environment Variable
   try {
     // @ts-ignore
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    if (import.meta.env && import.meta.env.VITE_API_KEY) {
       // @ts-ignore
-      return process.env.API_KEY;
+      return import.meta.env.VITE_API_KEY;
     }
   } catch (e) {
-    // Ignore ReferenceError if process is not defined
+    // Ignore
   }
 
   return '';

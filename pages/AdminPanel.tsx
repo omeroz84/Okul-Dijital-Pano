@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getStoredData, updateAnnouncements, updateTeachers, updatePhotos, updateWeather, updateAiContent, updateDutyStudents } from '../services/storage';
 import { AppData, Announcement, Teacher, SlidePhoto, Student } from '../types';
 import { generateDailyContent, suggestAnnouncement } from '../services/geminiService';
@@ -271,9 +272,9 @@ const AdminPanel: React.FC = () => {
             </button>
         </nav>
         <div className="p-4 border-t border-slate-800">
-            <a href="/#" className="block w-full text-center bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm text-slate-300 transition-colors flex items-center justify-center gap-2">
+            <Link to="/" className="block w-full text-center bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm text-slate-300 transition-colors flex items-center justify-center gap-2">
                 <Monitor size={16} /> Panoyu Görüntüle
-            </a>
+            </Link>
         </div>
       </div>
 

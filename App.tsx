@@ -1,34 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import AdminPanel from './pages/AdminPanel';
 
 const App: React.FC = () => {
-  const [currentPath, setCurrentPath] = useState(window.location.hash);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentPath(window.location.hash);
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    
-    // Set default hash if empty
-    if (!window.location.hash) {
-      window.location.hash = '#/';
-    }
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
-
-  // Simple Routing based on Hash
-  if (currentPath === '#/admin') {
-    return <AdminPanel />;
-  }
-
-  // Default to Dashboard
-  return <Dashboard />;
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        {/* Hatalı URL girilirse Dashboard'a yönlendir */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
+  );
 };
 
 export default App;

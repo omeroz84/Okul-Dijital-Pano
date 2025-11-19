@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getStoredData } from '../services/storage';
 import { AppData } from '../types';
 import Clock from '../components/Clock';
@@ -25,10 +26,10 @@ const Dashboard: React.FC = () => {
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#475569 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
       
-      {/* Secret Admin Link */}
-      <a href="#/admin" className="absolute top-4 right-4 opacity-0 hover:opacity-100 transition-opacity z-50 text-white/20 hover:text-white">
+      {/* Secret Admin Link using React Router Link */}
+      <Link to="/admin" className="absolute top-4 right-4 opacity-0 hover:opacity-100 transition-opacity z-50 text-white/20 hover:text-white">
         <Settings size={24} />
-      </a>
+      </Link>
 
       {/* Main Content Area */}
       <div className="flex-1 p-6 pb-2 flex gap-6 overflow-hidden z-10">
